@@ -30,6 +30,6 @@ stemmer = PorterStemmer()
 for ft in filtered_text:
   stemmized_words.append(stemmer.stem(ft))
 # ##################################################
-print(stemmized_words)
+print(stemmized_words.count("good")) #term frequency
 
 
