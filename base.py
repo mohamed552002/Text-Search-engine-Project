@@ -14,9 +14,7 @@ file = open("file0.txt").read().lower() #Case Folding with lower function
 ##################################################
 
 # Tokenization step
-# print(word_tokenize(text))
 token =nltk.Text(word_tokenize(file))
-print(token)
 ##################################################
 # removing stopwords
 stp = set(stopwords.words("english"))
@@ -24,12 +22,12 @@ stp.remove("at")
 stp.remove("to")
 filtered_text = [t for t in token if not t in stp]
 # ##################################################
-# # English Stemming step
+#Stemming step
 stemmized_words = [] 
 stemmer = PorterStemmer()
 for ft in filtered_text:
   stemmized_words.append(stemmer.stem(ft))
 # ##################################################
-print(stemmized_words.count("good")) #term frequency
-
+# Term frequency in file
+term_freq = stemmized_words.count("good")
 
