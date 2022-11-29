@@ -65,6 +65,7 @@ def words_extractor(): # extract all the words in all files
     for token in file_processed:
       word_set.append(token)
   return (list(set(word_set)))
+  
 def AllTF():#to get term frequency for all files
   tf={}
   all_words=words_extractor()
