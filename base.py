@@ -72,9 +72,9 @@ def words_extractor():  # extract all the words in all files
     return (list(set(word_set)))
 
 
-def TFforEachDoc():  # to get term frequency for each file
+def ALLTF():  # to get term frequency for each file
     tf = {}
-    all_words = words_extractor()
+    all_words = sorted(words_extractor())
     for i in range(1, 11):
         file = open(f"file{i}.txt").read()
         tf.update({f"file{i}": {}})
@@ -83,42 +83,43 @@ def TFforEachDoc():  # to get term frequency for each file
             tf[f"file{i}"].update({j: tf_counter})
     return tf
 
-def IDFforEachDoc():  # to get inverse document frequency for each file
-    tf = {}
-    all_words = words_extractor()
+def weight():  # to get weight
+    w = {}
+    all_words = sorted(words_extractor())
     for i in range(1, 11):
         file = open(f"file{i}.txt").read()
-        tf.update({f"file{i}": {}})
+        w.update({f"file{i}": {}})
         for j in all_words:
             tf_counter = file.count(j)
             if tf_counter != 0:
-                idf_counter = math.log10(10 / tf_counter)
+                weight_counter = tf_counter*(1 + math.log10(tf_counter))
             else:
-                idf_counter = 0
-            tf[f"file{i}"].update({j: idf_counter})
-    return tf
+                weight_counter = 0
+            w[f"file{i}"].update({j: weight_counter})
+    return w
 
-def TFforAllDoc():  # to get term frequency for all terms
+def DocumentFrequency():  # to get document frequency
     df = {}
     all_words = words_extractor()
     dic = positional_index(stemming(all_words))
-    for key, value in sorted (dic.items()):
+    for key, value in sorted(dic.items()):
         df.update({key: len(value)})
     return df
 
-def IDFforAllDoc():  # to get inverse document frequency for all terms
-    df = {}
+def IDF():  # to get inverse document frequency
+    idf = {}
     all_words = words_extractor()
     dic = positional_index(stemming(all_words))
-    for key, value in sorted (dic.items()):
+    for key, value in sorted(dic.items()):
         newValue = 10 / len(value)
-        df.update({key: math.log10(newValue)})
-    return df
+        idf.update({key: math.log10(newValue)})
+    return idf
 
-def multiplie():  # wrong!!
+
+def Multiply():  # wrong!!
     tf = {}
     newValue = []
-    all_words = words_extractor()
+    all_words = sorted(words_extractor())
     dic = positional_index(stemming(all_words))
     for key, value in sorted(dic.items()):
         newValue.append(math.log10(10 / len(value)))
@@ -127,23 +128,25 @@ def multiplie():  # wrong!!
         file = open(f"file{i}.txt").read()
         tf.update({f"file{i}": {}})
         for j in all_words:
-            tf_counter = file.count(j)
-            counter = newValue[i] * tf_counter
+            for k in range (0, len(newValue)):
+                tf_counter = file.count(j)
+                count = newValue[k]
+            counter = tf_counter*count
             tf[f"file{i}"].update({j: counter})
     return tf
+    #print(newValue)
 # raw_input=input("what you search for : ")
 # final_text=text_processing(raw_input)
 # those loops to get the positional index
 # PIndexRes = positional_index(final_text)
 
-tf = ((pd.DataFrame(TFforEachDoc())).fillna(0))
-idf = ((pd.DataFrame(IDFforEachDoc())).fillna(0))
-df = ((pd.DataFrame({'': TFforAllDoc().keys(), 'tf': TFforAllDoc().values(), 'idf' : IDFforAllDoc().values()}).fillna(0)))
-m = ((pd.DataFrame(multiplie())).fillna(0))
+tf = ((pd.DataFrame(ALLTF())).fillna(0))
+idf = ((pd.DataFrame(weight())).fillna(0))
+df = ((pd.DataFrame({'': DocumentFrequency().keys(), 'tf': DocumentFrequency().values(), 'idf' : IDF().values()}).fillna(0)))
+m = ((pd.DataFrame(Multiply())).fillna(0))
 
 print(tabulate(tf, headers="keys", tablefmt="fancy_grid"))
 print(tabulate(idf, headers="keys", tablefmt="fancy_grid"))
 print(tabulate(df, headers= "keys", tablefmt="fancy_grid"))
 print(tabulate(m, headers= "keys", tablefmt="fancy_grid"))
-
 
