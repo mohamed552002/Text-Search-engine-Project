@@ -201,9 +201,9 @@ def printAsQuery(query):
 # those loops to get the positional index
 # PIndexRes = positional_index(final_text)
 
-# df_idf = {"": DocumentFrequency().keys(), "df": DocumentFrequency().values(), "idf" : IDF().values()}
+df_idf = {"": DocumentFrequency().keys(), "df": DocumentFrequency().values(), "idf" : IDF().values()}
 
-# length={0:docLentgh().keys(),"  ":docLentgh().values()}
+length={0:docLentgh().keys(),"  ":docLentgh().values()}
 print(" "*40+"Term Frequency Table")
 printAsTbl(ALLTF(words_extractor()))
 print(" "*40+"Weight Term Frequency Table")
