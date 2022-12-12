@@ -54,6 +54,7 @@ def PIndexNoStemm(final_text):  # to get positional index
         for j in range(1, 11):
             file = open(f"file{j}.txt").read()
             final_file = (text_preprocessing(file))
+            final_file = stopword_remove(final_file)
             if (final_file.count(final_text[i])):
                 positional_dict[f"{final_text[i]}"].update({f"file{j}": []})
                 pos_index = (word_indexer(final_text[i], final_file))
@@ -75,6 +76,22 @@ def positional_index(final_text):  # to get positional index
                     positional_dict[final_text[i]][f"file{j}"].append(index)
     return positional_dict
 
+def documents_matched(final_text_lst):
+    docs_matched = []
+    posindex=positional_index(final_text_lst)
+    x=len(final_text_lst)
+    if len(final_text_lst) ==1:
+        docs_matched+=posindex[final_text_lst[0]].keys()
+    else:
+        for i in range(len(final_text_lst)):
+            wordptr1=posindex[final_text_lst[i]]
+            
+            if i+1  < len(final_text_lst):
+                wordptr2=posindex[final_text_lst[i+1]]
+                for key,value in (wordptr1.items()):
+                    if key in (wordptr2.keys()):
+                        docs_matched += [key for j in value if i+1 in wordptr2[key]]
+    return (docs_matched)
 
 def words_extractor():  # extract all the words in all files
     word_set = []
@@ -93,6 +110,7 @@ def ALLTF(queryLst=words_extractor()):  # to get term frequency for each file
         for i in range(1, 11):
             file = open(f"file{i}.txt").read()
             file=text_preprocessing(file)
+            file = stopword_remove(file)
             tf.update({f"file{i}": {}})
             for j in all_words:
                 tf_counter = file.count(j)
@@ -110,6 +128,7 @@ def weight(queryLst=words_extractor()):  # to get weight of tf
         for i in range(1, 11):
             file = open(f"file{i}.txt").read()
             file = text_preprocessing(file)
+            file = stopword_remove(file)
             w.update({f"file{i}": {}})
             for j in all_words:
                 tf_counter = file.count(j)
@@ -119,7 +138,7 @@ def weight(queryLst=words_extractor()):  # to get weight of tf
                     weight_counter = 0
                 w[f"file{i}"].update({j: weight_counter})
     else:
-        w=ALLTF(query)
+        w=ALLTF(queryLst)
         for key,value in w.items():
             w[key]*=(1 + math.log10(value))
     return w
@@ -186,23 +205,50 @@ def normalized(queryLst=words_extractor()): # getting Normalized tf.idf
             else:
                 normalized_dict[word]=0
     return normalized_dict
+def product(query,docs):
+    pdict={}
+    psumdict={}
+    NM_files=normalized()
+    NM_query=normalized(query)
+    for i in docs:
+        pdict.update({f"{i}":{}})
+        psumdict.update({f"{i}":{"sum":0}})
+        for j in query:
+            pdict[i].update({j:NM_files[i][j]*NM_query[j]})
+            psumdict[i]["sum"]+=NM_files[i][j]*NM_query[j]
+            # pdict[f"{i}"][j].append(NM_files[i][j]*NM_query[j])
+    return [pdict,psumdict]
+
+def similarity(query,file):
+    filterd= stopword_remove(query)
+    stemmized = stemming(filterd)
+    docs=documents_matched(stemmized)
+    if len(docs) ==0:
+        return 0
+    prod = product(query,docs)[1]
+    x=prod[file]["sum"]
+    return x
+
+def similarity_matched(query):
+    filterd= stopword_remove(query)
+    stemmized = stemming(filterd)
+    docs=documents_matched(stemmized)
+    docs_s=product(query,docs)[1]
+    dic= sorted(docs_s, key=lambda x: (docs_s[x]['sum']), reverse=True)
+    return tuple(dic)
 
 def printAsTbl(raw):
     df =((pd.DataFrame(raw)).fillna(0))
     print(tabulate(df,headers="keys",tablefmt="fancy_grid"))
-def printAsQuery(query):
+def printAsQueryTbl(query,prod):
     query_dict={"word":ALLTF(query).keys(),"TF-raw":ALLTF(query).values(),"W-TF":weight(query).values(),
                 "IDF":IDF(query).values(),"IDF*TF":IDFXTF(query).values(),"normalized":normalized(query).values()}
     df = (pd.DataFrame(query_dict)).set_index("word")
-    
-    print(tabulate(df,headers="keys",tablefmt="fancy_grid"))
-# raw_input=input("what you search for : ")
-# final_text=text_processing(raw_input)
-# those loops to get the positional index
-# PIndexRes = positional_index(final_text)
+    prod_df = pd.DataFrame(prod)
+    result = df.join(prod_df,how="inner")
 
+    print(tabulate(result,headers="keys",tablefmt="fancy_grid") )
 df_idf = {"": DocumentFrequency().keys(), "df": DocumentFrequency().values(), "idf" : IDF().values()}
-
 length={0:docLentgh().keys(),"  ":docLentgh().values()}
 print(" "*40+"Term Frequency Table")
 printAsTbl(ALLTF(words_extractor()))
@@ -216,9 +262,16 @@ print(" "*40+"Length")
 print(tabulate(length,tablefmt="fancy_grid"))
 print(" "*40+"Normalized Tf.idf")
 printAsTbl(normalized())
-
 print("*"*40)
-
-query = input("what u search for")
-query =text_preprocessing(query)
-printAsQuery(query)
+raw_query = input("what u search for")
+tokenized_query =text_preprocessing(raw_query)
+stemmized_query= text_processing(raw_query)
+docs=documents_matched(stemmized_query)
+prod=product(tokenized_query,docs)[0]
+prod_sum=product(tokenized_query,docs)[1]
+printAsQueryTbl(tokenized_query,prod)
+productsum_df=pd.DataFrame(product(tokenized_query,docs)[1])
+print(tabulate(productsum_df,headers="keys",tablefmt="fancy_grid"))
+print(f"Query Length : {docLentgh(tokenized_query)}")
+print(f"cosine similarty(q,doc1) : {similarity(tokenized_query,'file1')}")
+print(f"Rank docs matched {similarity_matched(tokenized_query)}")
