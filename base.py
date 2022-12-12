@@ -64,6 +64,7 @@ def PIndexNoStemm(final_text):  # to get positional index
     return positional_dict
 
 def positional_index(final_text):  # to get positional index
+    
     positional_dict = {}
     for i in range(0, len(final_text)):
         positional_dict.update({final_text[i]: {}})
@@ -77,21 +78,30 @@ def positional_index(final_text):  # to get positional index
                     positional_dict[final_text[i]][f"file{j}"].append(index)
     return positional_dict
 
-def documents_matched(final_text_lst):
+def documents_matched(stemmized_lst):
     docs_matched = []
-    posindex=positional_index(final_text_lst)
-    x=len(final_text_lst)
-    if len(final_text_lst) ==1:
-        docs_matched+=posindex[final_text_lst[0]].keys()
-    else:
-        for i in range(len(final_text_lst)):
-            wordptr1=posindex[final_text_lst[i]]
+    final = " ".join(stemmized_lst)
+    # posindex=positional_index(final_text_lst)
+    # x=len(final_text_lst)
+    # if len(final_text_lst) ==1:
+    #     docs_matched+=posindex[final_text_lst[0]].keys()
+    # else:
+    if(final != ""):
+        for i in range(1,11):
+            file = open((f"file{i}.txt")).read()
+            file=text_preprocessing(file)
+            file=stemming(file)
+            file = " ".join(file)
+            if file.count(final)>0 :
+                docs_matched+=[f"file{i}"]
             
-            if i+1  < len(final_text_lst):
-                wordptr2=posindex[final_text_lst[i+1]]
-                for key,value in (wordptr1.items()):
-                    if key in (wordptr2.keys()):
-                        docs_matched += [key for j in value if i+1 in wordptr2[key]]
+            # wordptr1=posindex[final_text_lst[i]]
+            
+            # if i+1  < len(final_text_lst):
+            #     wordptr2=posindex[final_text_lst[i+1]]
+            #     for key,value in (wordptr1.items()):
+            #         if key in (wordptr2.keys()):
+            #             docs_matched += [key for j in value if i+1 in wordptr2[key]]
     return (docs_matched)
 
 def words_extractor():  # extract all the words in all files
@@ -207,17 +217,21 @@ def normalized(queryLst=words_extractor()): # getting Normalized tf.idf
                 normalized_dict[word]=0
     return normalized_dict
 def product(query,docs):
-    pdict={}
-    psumdict={}
-    NM_files=normalized()
-    NM_query=normalized(query)
-    for i in docs:
-        pdict.update({f"{i}":{}})
-        psumdict.update({f"{i}":{"sum":0}})
-        for j in query:
-            pdict[i].update({j:NM_files[i][j]*NM_query[j]})
-            psumdict[i]["sum"]+=NM_files[i][j]*NM_query[j]
-            # pdict[f"{i}"][j].append(NM_files[i][j]*NM_query[j])
+    if len(docs):
+        pdict={}
+        psumdict={}
+        NM_files=normalized()
+        NM_query=normalized(query)
+        for i in docs:
+            pdict.update({f"{i}":{}})
+            psumdict.update({f"{i}":{"sum":0}})
+            for j in query:
+                pdict[i].update({j:NM_files[i][j]*NM_query[j]})
+                psumdict[i]["sum"]+=NM_files[i][j]*NM_query[j]
+                # pdict[f"{i}"][j].append(NM_files[i][j]*NM_query[j])
+    else:
+        pdict={'':{'':0}}
+        psumdict={'':{"sum":0}}
     return [pdict,psumdict]
 
 def similarity(query,file):
@@ -238,9 +252,16 @@ def similarity_matched(query):
     dic= sorted(docs_s, key=lambda x: (docs_s[x]['sum']), reverse=True)
     return tuple(dic)
 
+def print_similarity(stemmized_query):
+    docs = documents_matched(stemmized_query)
+    for d in docs:
+        print(f"cosine similarty(q,{d}) : {similarity(tokenized_query,f'{d}')}")
+
 def printAsTbl(raw):
     df =((pd.DataFrame(raw)).fillna(0))
     print(tabulate(df,headers="keys",tablefmt="fancy_grid"))
+    
+
 def printAsQueryTbl(query,prod):
     query_dict={"word":ALLTF(query).keys(),"TF-raw":ALLTF(query).values(),"W-TF":weight(query).values(),
                 "IDF":IDF(query).values(),"IDF*TF":IDFXTF(query).values(),"normalized":normalized(query).values()}
@@ -248,8 +269,9 @@ def printAsQueryTbl(query,prod):
     prod_df = pd.DataFrame(prod)
     result = df.join(prod_df,how="inner")
     print(tabulate(result,headers="keys",tablefmt="fancy_grid"))
+
 def printPosIndex(query):
-    x=positional_index(stemmized_query)
+    x=positional_index(stemming(query))
     stemm=PorterStemmer()
     for word in query:
         word_stem = stemm.stem(word)
@@ -274,18 +296,17 @@ printAsTbl(normalized())
 print("*"*40)
 raw_query = input("what u search for")
 tokenized_query =text_preprocessing(raw_query)
+filtered=stopword_remove(tokenized_query)
 stemmized_query= text_processing(raw_query)
 docs=documents_matched(stemmized_query)
-prod=product(tokenized_query,docs)[0]
-prod_sum=product(tokenized_query,docs)[1]
-printAsQueryTbl(tokenized_query,prod)
-productsum_df=pd.DataFrame(product(tokenized_query,docs)[1])
+prod=product(filtered,docs)[0]
+prod_sum=product(filtered,docs)[1]
+printAsQueryTbl(filtered,prod)
+productsum_df=pd.DataFrame(prod_sum)
 print(tabulate(productsum_df,headers="keys",tablefmt="fancy_grid"))
 print(f"Query Length : {docLentgh(tokenized_query)}")
-print(f"cosine similarty(q,doc1) : {similarity(tokenized_query,'file1')}")
-print(f"cosine similarty(q,doc1) : {similarity(tokenized_query,'file2')}")
+print_similarity(prod_sum)
 print(f"Rank docs matched {similarity_matched(tokenized_query)}")
 
 
 printPosIndex(tokenized_query)
-
