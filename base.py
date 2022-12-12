@@ -6,6 +6,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 import math
+import time
 
 def word_indexer(word, lst):  # function to get word index in file
     index_dict = {word: []}
@@ -33,11 +34,11 @@ def stopword_remove(token_lst):  # stopword removal
 
 
 def stemming(filtered_txt):  # Stemming
-    stemmized_words = []
+    stemmized = []
     stemmer = PorterStemmer()
     for ft in filtered_txt:
-        stemmized_words.append(stemmer.stem(ft))
-    return stemmized_words
+        stemmized.append(stemmer.stem(ft))
+    return stemmized
 
 
 def text_processing(text):  # to do all the work
@@ -246,8 +247,16 @@ def printAsQueryTbl(query,prod):
     df = (pd.DataFrame(query_dict)).set_index("word")
     prod_df = pd.DataFrame(prod)
     result = df.join(prod_df,how="inner")
+    print(tabulate(result,headers="keys",tablefmt="fancy_grid"))
+def printPosIndex(query):
+    x=positional_index(stemmized_query)
+    stemm=PorterStemmer()
+    for word in query:
+        word_stem = stemm.stem(word)
+        print(f"<{word}, number of docs containing {word} {len(x[f'{word_stem}'])};" )
+        for key ,value in (x[word_stem]).items():
+                print(f"{key}:{(x[word_stem][key])}")
 
-    print(tabulate(result,headers="keys",tablefmt="fancy_grid") )
 df_idf = {"": DocumentFrequency().keys(), "df": DocumentFrequency().values(), "idf" : IDF().values()}
 length={0:docLentgh().keys(),"  ":docLentgh().values()}
 print(" "*40+"Term Frequency Table")
@@ -274,4 +283,9 @@ productsum_df=pd.DataFrame(product(tokenized_query,docs)[1])
 print(tabulate(productsum_df,headers="keys",tablefmt="fancy_grid"))
 print(f"Query Length : {docLentgh(tokenized_query)}")
 print(f"cosine similarty(q,doc1) : {similarity(tokenized_query,'file1')}")
+print(f"cosine similarty(q,doc1) : {similarity(tokenized_query,'file2')}")
 print(f"Rank docs matched {similarity_matched(tokenized_query)}")
+
+
+printPosIndex(tokenized_query)
+
